@@ -218,4 +218,41 @@ describe('franchise routes', () => {
     expect(deleteRes.status).toBe(200);
     expect(deleteRes.body.message).toBe('franchise deleted');
     });
+
+    test('delete franchise requires authentication', async () => {
+        const franchiseRes = await request(app)
+            .post('/api/franchise')
+            .set('Authorization', `Bearer ${adminToken}`)
+            .send({
+            name: randomName(),
+            admins: [{ email: dinerUser.email }],
+            });
+
+        const franchiseId = franchiseRes.body.id;
+
+        const deleteRes = await request(app)
+            .delete(`/api/franchise/${franchiseId}`);
+
+        expect(deleteRes.status).toBe(401);
+        expect(deleteRes.body.message).toBe('unauthorized');
+    });
+
+    test('non-admin cannot delete franchise', async () => {
+        const franchiseRes = await request(app)
+            .post('/api/franchise')
+            .set('Authorization', `Bearer ${adminToken}`)
+            .send({
+            name: randomName(),
+            admins: [{ email: dinerUser.email }],
+            });
+
+        const franchiseId = franchiseRes.body.id;
+
+        const deleteRes = await request(app)
+            .delete(`/api/franchise/${franchiseId}`)
+            .set('Authorization', `Bearer ${dinerToken}`);
+
+        expect(deleteRes.status).toBe(403);
+        expect(deleteRes.body.message).toBe('unable to delete a franchise');
+    });
 });
