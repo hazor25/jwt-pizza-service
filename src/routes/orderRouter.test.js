@@ -37,11 +37,42 @@ async function loginUser(user) {
   return res.body.token;
 }
 
+
 describe('order routes', () => {
   let adminUser;
   let adminToken;
   let dinerUser;
   let dinerToken;
+  let originalFetch;
+
+  async function createFranchiseWithStore(adminToken, adminUser) {
+    const franchiseName = randomName();
+    const storeName = randomName();
+
+    await request(app)
+      .post('/api/franchise')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        name: franchiseName,
+        admins: [{ email: adminUser.email }],
+      });
+
+    let franchisesRes = await request(app).get('/api/franchise');
+    let franchise = franchisesRes.body.franchises.find(f => f.name === franchiseName);
+    if (!franchise) {
+      franchise = franchisesRes.body.franchises[0];
+    }
+
+    await request(app)
+      .post(`/api/franchise/${franchise.id}/store`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ name: storeName });
+
+    franchisesRes = await request(app).get('/api/franchise');
+    franchise = franchisesRes.body.franchises.find(f => f.name === franchiseName) || franchisesRes.body.franchises[0];
+
+    return franchise;
+  }
 
   beforeAll(async () => {
     adminUser = await createAdminUser();
@@ -51,9 +82,24 @@ describe('order routes', () => {
     dinerToken = dinerUser.token;
   });
 
+  beforeAll(() => {
+    originalFetch = global.fetch;
+  });
+
   afterEach(() => {
     if (global.fetch && global.fetch.mockClear) {
       global.fetch.mockClear();
+    }
+  });
+
+  afterAll(async () => {
+    if (originalFetch) {
+      global.fetch = originalFetch;
+    }
+    jest.restoreAllMocks();
+
+    if (DB && typeof DB.close === 'function') {
+      await DB.close();
     }
   });
 
@@ -112,6 +158,10 @@ describe('order routes', () => {
     const menuItem = menuRes.body[0];
     expect(menuItem).toBeTruthy();
 
+    const franchise = await createFranchiseWithStore(adminToken, adminUser);
+    expect(franchise).toBeTruthy();
+    expect(franchise.stores.length).toBeGreaterThan(0);
+
     global.fetch = jest.fn(() =>
       Promise.resolve({
         ok: true,
@@ -122,11 +172,6 @@ describe('order routes', () => {
           }),
       })
     );
-
-    const franchisesRes = await request(app).get('/api/franchise');
-    const franchise = franchisesRes.body.franchises[0];
-    expect(franchise).toBeTruthy();
-    expect(franchise.stores.length).toBeGreaterThan(0);
 
     const res = await request(app)
       .post('/api/order')
@@ -155,6 +200,10 @@ describe('order routes', () => {
     const menuItem = menuRes.body[0];
     expect(menuItem).toBeTruthy();
 
+    const franchise = await createFranchiseWithStore(adminToken, adminUser);
+    expect(franchise).toBeTruthy();
+    expect(franchise.stores.length).toBeGreaterThan(0);
+
     global.fetch = jest.fn(() =>
       Promise.resolve({
         ok: false,
@@ -164,11 +213,6 @@ describe('order routes', () => {
           }),
       })
     );
-
-    const franchisesRes = await request(app).get('/api/franchise');
-    const franchise = franchisesRes.body.franchises[0];
-    expect(franchise).toBeTruthy();
-    expect(franchise.stores.length).toBeGreaterThan(0);
 
     const res = await request(app)
       .post('/api/order')
