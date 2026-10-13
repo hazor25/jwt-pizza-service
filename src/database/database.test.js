@@ -1,6 +1,11 @@
 const { DB } = require('./database');
 
 describe('database helpers', () => {
+  afterAll(async () => {
+    await new Promise((r) => setTimeout(r, 100)); // give mysql2 time to finish
+  });
+  
+
   test('getTokenSignature returns jwt signature part', () => {
     expect(DB.getTokenSignature('a.b.c')).toBe('c');
   });

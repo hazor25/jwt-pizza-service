@@ -151,26 +151,6 @@ describe('user routes', () => {
     expect(res.body.message).toBe('unauthorized');
   });
 
-  test('list users requires auth', async () => {
-    const res = await request(app).get('/api/user');
-
-    expect(res.status).toBe(401);
-    expect(res.body.message).toBe('unauthorized');
-  });
-
-  test('list users returns placeholder response for authenticated user', async () => {
-    const res = await request(app)
-      .get('/api/user')
-      .set('Authorization', `Bearer ${dinerToken}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual({
-      message: 'not implemented',
-      users: [],
-      more: false,
-    });
-  });
-
   test('delete user requires auth', async () => {
     const res = await request(app).delete(`/api/user/${dinerUser.user.id}`);
 
@@ -189,21 +169,7 @@ describe('user routes', () => {
 
 
 
-  async function registerUser(service) {
-    const testUser = {
-        name: 'pizza diner',
-        email: `${randomName()}@test.com`,
-        password: 'a',
-    };
-    const registerRes = await service.post('/api/auth').send(testUser);
-    registerRes.body.user.password = testUser.password;
 
-    return [registerRes.body.user, registerRes.body.token];
-  }
-
-  function randomName() {
-    return Math.random().toString(36).substring(2, 12);
-  }
 
 
   test('list users unauthorized', async () => {
@@ -211,7 +177,7 @@ describe('user routes', () => {
 
     expect(res.status).toBe(401);
     expect(res.body.message).toBe('unauthorized');
-    });
+  });
 
   test('non-admin cannot list users', async () => {
     const res = await request(app)
@@ -235,7 +201,7 @@ describe('user routes', () => {
 
   test('admin list users returns user information', async () => {
     const res = await request(app)
-        .get('/api/user')
+        .get('/api/user?page=1&limit=200')
         .set('Authorization', `Bearer ${adminToken}`);
 
     expect(res.status).toBe(200);
