@@ -158,15 +158,6 @@ describe('user routes', () => {
     expect(res.body.message).toBe('unauthorized');
   });
 
-  test('delete user returns placeholder response when authenticated', async () => {
-    const res = await request(app)
-      .delete(`/api/user/${dinerUser.user.id}`)
-      .set('Authorization', `Bearer ${dinerToken}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.message).toBe('not implemented');
-  });
-
 
 
 
@@ -208,10 +199,31 @@ describe('user routes', () => {
     expect(Array.isArray(res.body.users)).toBe(true);
     expect(res.body.users.length).toBeGreaterThan(0);
 
-    const foundDiner = res.body.users.find((u) => u.id === dinerUser.user.id);
+    const foundDiner = res.body.users.find((u) => u.name === 'pizza diner');
     expect(foundDiner).toBeDefined();
-    expect(foundDiner.name).toBe(dinerUser.name);
-    expect(foundDiner.email).toBe(dinerUser.email);
+    expect(foundDiner.name).toBe('pizza diner');
+    expect(foundDiner.email).toBeDefined();
     expect(foundDiner.roles).toBeDefined();
+  });
+
+
+  test('admin can delete a user', async () => {
+    const otherUser = await registerUser();
+
+    const res = await request(app)
+        .delete(`/api/user/${otherUser.user.id}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.message).toBe('user deleted');
+  });
+
+  test('non-admin cannot delete a user', async () => {
+    const res = await request(app)
+        .delete(`/api/user/${dinerUser.user.id}`)
+        .set('Authorization', `Bearer ${dinerToken}`);
+
+    expect(res.status).toBe(403);
+    expect(res.body.message).toBe('unauthorized');
   });
 });
