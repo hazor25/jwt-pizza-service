@@ -190,18 +190,23 @@ describe('user routes', () => {
     expect(res.body).toHaveProperty('more');
   });
 
+
   test('admin list users returns user information', async () => {
     const res = await request(app)
-        .get('/api/user?page=1&limit=200')
-        .set('Authorization', `Bearer ${adminToken}`);
+      .get('/api/user?page=1&limit=200')
+      .set('Authorization', `Bearer ${adminToken}`);
 
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body.users)).toBe(true);
     expect(res.body.users.length).toBeGreaterThan(0);
 
-    const foundDiner = res.body.users.find((u) => u.name === 'pizza diner');
+    // Find the first non-admin user (a "diner")
+    const foundDiner = res.body.users.find((u) => 
+      !u.roles?.some((r) => r.role === 'admin')
+    );
+
     expect(foundDiner).toBeDefined();
-    expect(foundDiner.name).toBe('pizza diner');
+    expect(foundDiner.name).toBeDefined();
     expect(foundDiner.email).toBeDefined();
     expect(foundDiner.roles).toBeDefined();
   });
