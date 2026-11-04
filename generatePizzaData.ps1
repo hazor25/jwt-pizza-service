@@ -1,4 +1,4 @@
-$hostUrl = "http://localhost:3000"
+$hostUrl = "https://pizza-service.hazor25.click"
 
 $response = Invoke-RestMethod -Method Put -Uri "$hostUrl/api/auth" -ContentType "application/json" -Body '{"email":"a@jwt.com", "password":"admin"}'
 $token = $response.token
