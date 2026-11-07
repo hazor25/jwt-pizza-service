@@ -83,7 +83,7 @@ while true; do
   sleep 5
   result=$(execute_curl "-X DELETE $host/api/auth -H \"Authorization: Bearer $token\"")
   echo "Logging out hungry diner..." $result
-  sleep 295
+  sleep 115
 done &
 pid5=$!
 
