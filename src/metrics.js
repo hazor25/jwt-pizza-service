@@ -41,6 +41,10 @@ class Metrics {
     if (success) this.auth.success++;
     else this.auth.failure++;
   }
+
+  userLoggedIn(token) {
+    this.activeUsers.set(token, Date.now());
+  }
  
   userLoggedOut(token) {
     this.activeUsers.delete(token);

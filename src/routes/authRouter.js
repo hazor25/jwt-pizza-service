@@ -66,6 +66,7 @@ authRouter.post(
     }
     const user = await DB.addUser({ name, email, password, roles: [{ role: Role.Diner }] });
     const auth = await setAuth(user);
+    metrics.userLoggedIn(auth);
     res.json({ user: user, token: auth });
   })
 );
@@ -83,6 +84,7 @@ authRouter.put(
       throw e;
     }
     const auth = await setAuth(user);
+    metrics.userLoggedIn(auth);
     metrics.authAttempt(true);
     res.json({ user: user, token: auth });
   })
