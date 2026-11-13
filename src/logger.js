@@ -28,8 +28,27 @@ class Logger {
     this.context.run({ userId: req.user ? req.user.id : null }, next);
   };
 
-  dbLogger(query, params) {
-    this.log('info', 'db', { query, params, userId: this.currentUserId() });
+  dbLogger(sql, params) {
+    const { query, safeParams } = this.sanitizeSql(sql, params);
+    this.log('info', 'db', { query, params: safeParams, userId: this.currentUserId() });
+  }
+
+  sanitizeSql(sql, params) {
+    const sensitive = (name) => SENSITIVE_KEYS.includes(String(name).toLowerCase());
+
+    const query = sql.replace(/(password|token)\s*=\s*'[^']*'/gi, "$1='*****'");
+
+    if (!Array.isArray(params)) return { query, safeParams: params };
+
+    let names = [];
+    const insert = sql.match(/INSERT\s+INTO\s+\w+\s*\(([^)]*)\)/i);
+    if (insert) {
+      names = insert[1].split(',').map((c) => c.trim());
+    } else {
+      names = [...sql.matchAll(/(\w+)\s*(?:=|LIKE)\s*\?/gi)].map((m) => m[1]);
+    }
+    const safeParams = params.map((p, i) => (sensitive(names[i]) ? '*****' : p));
+    return { query, safeParams };
   }
 
   factoryLogger(reqBody, resBody) {

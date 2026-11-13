@@ -1,3 +1,5 @@
+const logger = require('../logger.js');
+
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcrypt');
 const config = require('../config.js');
@@ -338,12 +340,15 @@ class DB {
   }
 
   async query(connection, sql, params) {
+    logger.dbLogger(sql, params); 
     const [results] = await connection.execute(sql, params);
     return results;
   }
 
   async getID(connection, key, value, table) {
-    const [rows] = await connection.execute(`SELECT id FROM ${table} WHERE ${key}=?`, [value]);
+    const sql = `SELECT id FROM ${table} WHERE ${key}=?`;
+    logger.dbLogger(sql, [value]);           
+    const [rows] = await connection.execute(sql, [value]);
     if (rows.length > 0) {
       return rows[0].id;
     }
