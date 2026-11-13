@@ -1,4 +1,6 @@
 const metrics = require('./metrics');
+const logger = require('./logger');
+
 const express = require('express');
 const { authRouter, setAuthUser } = require('./routes/authRouter.js');
 const orderRouter = require('./routes/orderRouter.js');
@@ -7,11 +9,13 @@ const userRouter = require('./routes/userRouter.js');
 const version = require('./version.json');
 const config = require('./config.js');
 
+
 const app = express();
 app.use(express.json());
 app.use(metrics.requestTracker);
 metrics.start(10000);
 app.use(setAuthUser);
+app.use(logger.httpLogger);
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
@@ -50,8 +54,14 @@ app.use('*', (req, res) => {
 
 // Default error handler for all exceptions and errors.
 app.use((err, req, res, next) => {
+  logger.unhandledErrorLogger(err);
   res.status(err.statusCode ?? 500).json({ message: err.message, stack: err.stack });
   next();
 });
+
+process.on('uncaughtException', (err) => logger.unhandledErrorLogger(err));
+process.on('unhandledRejection', (reason) =>
+  logger.unhandledErrorLogger(reason instanceof Error ? reason : new Error(String(reason)))
+);
 
 module.exports = app;
